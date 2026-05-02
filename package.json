@@ -1,0 +1,42 @@
+{
+  "name": "agent-memory",
+  "version": "0.1.0",
+  "description": "Local-first memory layer for coding agents.",
+  "type": "module",
+  "bin": {
+    "agent-memory": "./dist/cli/main.js",
+    "agent-memory-mcp": "./dist/mcp/server.js"
+  },
+  "exports": {
+    ".": "./dist/index.js"
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "test": "vitest run",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "keywords": [
+    "agent",
+    "memory",
+    "mcp",
+    "claude-code",
+    "codex"
+  ],
+  "license": "MIT",
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {
+    "commander": "^14.0.1"
+  },
+  "devDependencies": {
+    "@types/node": "^24.10.1",
+    "typescript": "^5.9.3",
+    "vitest": "^4.0.13"
+  }
+}
