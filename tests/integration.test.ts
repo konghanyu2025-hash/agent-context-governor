@@ -8,7 +8,7 @@ import { generateContextPack } from "../src/pack/contextPack.js";
 import { startMcpServer } from "../src/mcp/server.js";
 import { MemoryStore } from "../src/store/memoryStore.js";
 
-describe("agent-memory integration", () => {
+describe("agent-context-governor integration", () => {
   it("indexes a project, records memory, and generates preflight context", async () => {
     const root = await mkdtemp(path.join(os.tmpdir(), "agent-memory-"));
     await mkdir(path.join(root, "src"));
@@ -48,6 +48,7 @@ describe("agent-memory integration", () => {
       save: false
     });
 
+    expect(pack.markdown).toContain("Project Index");
     expect(pack.markdown).toContain("Keep memory local-first");
     expect(pack.markdown).toContain("Do Not Repeat Blindly");
     expect(pack.markdown).toContain("external vector database");
@@ -70,5 +71,50 @@ describe("agent-memory integration", () => {
     expect(response.result.tools.map((tool) => tool.name)).toEqual(
       expect.arrayContaining(["memory.search", "context.pack", "decision.record", "attempt.record", "dependency.review", "project.index"])
     );
+  });
+
+  it("handles MCP tool calls for recording and context packing", async () => {
+    const root = await mkdtemp(path.join(os.tmpdir(), "agent-memory-"));
+    const input = new PassThrough();
+    const output = new PassThrough();
+    let raw = "";
+    output.on("data", (chunk: Buffer) => {
+      raw += chunk.toString("utf8");
+    });
+
+    const server = startMcpServer({ cwd: root, input, output });
+    input.write(`${JSON.stringify({
+      jsonrpc: "2.0",
+      id: 1,
+      method: "tools/call",
+      params: {
+        name: "decision.record",
+        arguments: {
+          title: "Use context packs",
+          rationale: "Agents need small cited summaries before work starts"
+        }
+      }
+    })}\n`);
+    input.end(`${JSON.stringify({
+      jsonrpc: "2.0",
+      id: 2,
+      method: "tools/call",
+      params: {
+        name: "context.pack",
+        arguments: {
+          task: "generate context packs",
+          save: false
+        }
+      }
+    })}\n`);
+    await server;
+
+    const responses = raw.trim().split(/\r?\n/u).map((line) => JSON.parse(line)) as Array<{
+      id: number;
+      result: { content: Array<{ text: string }> };
+    }>;
+    expect(responses).toHaveLength(2);
+    expect(responses[0]?.result.content[0]?.text).toContain("Use context packs");
+    expect(responses[1]?.result.content[0]?.text).toContain("Use context packs");
   });
 });

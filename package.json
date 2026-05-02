@@ -1,9 +1,13 @@
 {
-  "name": "agent-memory",
+  "name": "agent-context-governor",
   "version": "0.1.0",
-  "description": "Local-first memory layer for coding agents.",
+  "description": "Local-first context and memory governor for coding agents.",
   "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
   "bin": {
+    "agent-context": "./dist/cli/main.js",
+    "agent-context-mcp": "./dist/mcp/server.js",
     "agent-memory": "./dist/cli/main.js",
     "agent-memory-mcp": "./dist/mcp/server.js"
   },
@@ -12,17 +16,25 @@
   },
   "files": [
     "dist",
+    "docs",
     "README.md",
-    "LICENSE"
+    "CHANGELOG.md",
+    "LICENSE",
+    "SECURITY.md"
   ],
   "scripts": {
     "build": "tsc -p tsconfig.json",
+    "check": "npm run typecheck && npm test && npm run build",
+    "prepack": "npm run build",
     "test": "vitest run",
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "keywords": [
     "agent",
+    "context",
     "memory",
+    "token",
+    "governor",
     "mcp",
     "claude-code",
     "codex"

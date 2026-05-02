@@ -7,16 +7,36 @@ import { buildProjectIndex } from "../indexer/projectIndex.js";
 import { searchMemory } from "../search/search.js";
 import { reviewNpmPackage } from "../review/npmReview.js";
 import { startMcpServer } from "../mcp/server.js";
+import { formatDoctorReport, runDoctor } from "../doctor/doctor.js";
 import type { EvidenceRef } from "../types.js";
 
 export async function runCli(argv = process.argv): Promise<void> {
   const program = new Command();
 
   program
-    .name("agent-memory")
-    .description("Local-first memory layer for coding agents.")
+    .name("agent-context")
+    .description("Local-first context and memory governor for coding agents.")
     .version("0.1.0")
     .option("-C, --cwd <path>", "project root", process.cwd());
+
+  program
+    .command("doctor")
+    .description("Check local setup, privacy guardrails, and project memory health.")
+    .option("--json", "print raw JSON")
+    .action(async (options: { json?: boolean }) => {
+      const store = createStore(program);
+      const report = await runDoctor(store);
+
+      if (options.json) {
+        console.log(JSON.stringify(report, null, 2));
+      } else {
+        console.log(formatDoctorReport(report));
+      }
+
+      if (!report.ok) {
+        process.exitCode = 1;
+      }
+    });
 
   program
     .command("init")

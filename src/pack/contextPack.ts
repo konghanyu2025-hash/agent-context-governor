@@ -26,7 +26,7 @@ export async function generateContextPack(
   const results = await searchMemory(store, task, { limit });
   const grouped = groupResults(results);
   const lines: string[] = [
-    "# Agent Memory Context Pack",
+    "# Agent Context Pack",
     "",
     `Task: ${task}`,
     `Generated: ${new Date().toISOString()}`,

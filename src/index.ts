@@ -9,6 +9,8 @@ export { generateContextPack, enforceTokenBudget } from "./pack/contextPack.js";
 export { buildProjectIndex } from "./indexer/projectIndex.js";
 export { reviewNpmPackage } from "./review/npmReview.js";
 export { startMcpServer } from "./mcp/server.js";
+export { formatDoctorReport, runDoctor } from "./doctor/doctor.js";
+export type { DoctorCheck, DoctorReport, DoctorStatus } from "./doctor/doctor.js";
 export type {
   AgentMemoryConfig,
   AttemptRecord,

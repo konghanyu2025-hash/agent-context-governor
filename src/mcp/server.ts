@@ -101,7 +101,7 @@ async function handleRequest(request: JsonRpcRequest, defaultCwd: string): Promi
           tools: {}
         },
         serverInfo: {
-          name: "agent-memory",
+          name: "agent-context-governor",
           version: "0.1.0"
         }
       };

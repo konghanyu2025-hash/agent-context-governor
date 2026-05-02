@@ -45,13 +45,12 @@ export async function searchMemory(
   }
 
   if (projectIndex) {
-    pushIfRelevant(
-      results,
-      tokens,
-      projectIndex,
-      projectIndexText(projectIndex),
-      ".agent-memory/project-index.json"
-    );
+    results.push({
+      kind: "project-index",
+      score: Math.max(scoreText(tokens, projectIndexText(projectIndex)), 0.1),
+      source: ".agent-memory/project-index.json",
+      record: projectIndex
+    });
   }
 
   const limit = options.limit ?? (await store.readConfig()).maxContextItems;
