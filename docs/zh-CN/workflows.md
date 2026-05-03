@@ -3,7 +3,7 @@
 ## agent 开始任务前
 
 ```bash
-agent-context index
+agent-context setup
 agent-context preflight "在这里描述任务" --budget 3000
 ```
 

@@ -17,6 +17,12 @@
 
 ## 安装
 
+直接从 GitHub 安装，不需要先发布到 npm：
+
+```bash
+npm install -g github:konghanyu2025-hash/agent-context-governor
+```
+
 从本地仓库安装：
 
 ```bash
@@ -42,9 +48,7 @@ agent-memory-mcp
 ## 快速开始
 
 ```bash
-agent-context init
-agent-context index
-agent-context doctor
+agent-context setup
 
 agent-context record decision \
   --title "Use JSONL for local memory" \
@@ -65,6 +69,7 @@ agent-context preflight "extend the CLI with a new record command" --budget 3000
 
 - `agent-context init`：创建 `.agent-memory/`、配置文件、JSONL 存储和私有 `.agent-memory/.gitignore`。
 - `agent-context index`：扫描包管理器、语言、入口文件、脚本和关键目录。
+- `agent-context setup`：一条命令完成 `init`、`index` 和 `doctor`。
 - `agent-context doctor`：检查本地设置、隐私保护和项目索引状态。
 - `agent-context search "<query>"`：搜索决策、尝试记录、依赖审查和项目索引。
 - `agent-context preflight "<task>"`：在 agent 开始工作前生成 context pack。

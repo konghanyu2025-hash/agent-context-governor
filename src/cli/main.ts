@@ -20,6 +20,32 @@ export async function runCli(argv = process.argv): Promise<void> {
     .option("-C, --cwd <path>", "project root", process.cwd());
 
   program
+    .command("setup")
+    .description("Initialize local memory, index the project, and run doctor in one step.")
+    .option("--json", "print raw JSON")
+    .action(async (options: { json?: boolean }) => {
+      const store = createStore(program);
+      const paths = await store.init();
+      const index = await buildProjectIndex(store);
+      const report = await runDoctor(store);
+
+      if (options.json) {
+        console.log(JSON.stringify({ paths, index, doctor: report }, null, 2));
+      } else {
+        console.log(`Initialized local memory at ${paths.memoryDir}`);
+        console.log(`Indexed project: ${index.languages.join(", ") || "unknown language"}; ${index.entryFiles.length} entry file(s).`);
+        console.log("");
+        console.log(formatDoctorReport(report));
+        console.log("");
+        console.log('Next: run agent-context preflight "describe your task"');
+      }
+
+      if (!report.ok) {
+        process.exitCode = 1;
+      }
+    });
+
+  program
     .command("doctor")
     .description("Check local setup, privacy guardrails, and project memory health.")
     .option("--json", "print raw JSON")

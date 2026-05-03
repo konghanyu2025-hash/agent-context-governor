@@ -19,8 +19,7 @@ describe("CLI", () => {
     await writeFile(path.join(root, ".gitignore"), ".agent-memory/\n", "utf8");
     await writeFile(path.join(root, "package.json"), JSON.stringify({ scripts: { test: "vitest run" } }), "utf8");
     const output = await captureOutput(async () => {
-      await runCli(["node", "agent-context", "--cwd", root, "init"]);
-      await runCli(["node", "agent-context", "--cwd", root, "index"]);
+      await runCli(["node", "agent-context", "--cwd", root, "setup"]);
       await runCli([
         "node",
         "agent-context",
@@ -39,9 +38,24 @@ describe("CLI", () => {
     });
 
     expect(output.stdout).toContain("Initialized local memory");
+    expect(output.stdout).toContain("Indexed project");
     expect(output.stdout).toContain("Prefer small context packs");
     expect(output.stdout).toContain("Agent Context Doctor");
     expect(output.stdout).toContain("Agent Context Pack");
+  });
+
+  it("prints JSON from setup", async () => {
+    const root = await mkdtemp(path.join(os.tmpdir(), "agent-memory-"));
+    await writeFile(path.join(root, ".gitignore"), ".agent-memory/\n", "utf8");
+    await writeFile(path.join(root, "package.json"), JSON.stringify({ scripts: { test: "vitest run" } }), "utf8");
+
+    const output = await captureOutput(async () => {
+      await runCli(["node", "agent-context", "--cwd", root, "setup", "--json"]);
+    });
+    const parsed = JSON.parse(output.stdout) as { doctor: { ok: boolean }; index: { packageManager?: string } };
+
+    expect(parsed.doctor.ok).toBe(true);
+    expect(parsed.index.packageManager).toBe("npm");
   });
 });
 

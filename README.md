@@ -17,6 +17,12 @@ The project stores structured memory in `.agent-memory/` inside the local projec
 
 ## Install
 
+From GitHub, without npm registry publication:
+
+```bash
+npm install -g github:konghanyu2025-hash/agent-context-governor
+```
+
 From a local checkout:
 
 ```bash
@@ -42,9 +48,7 @@ agent-memory-mcp
 ## Quick Start
 
 ```bash
-agent-context init
-agent-context index
-agent-context doctor
+agent-context setup
 
 agent-context record decision \
   --title "Use JSONL for local memory" \
@@ -65,6 +69,7 @@ agent-context preflight "extend the CLI with a new record command" --budget 3000
 
 - `agent-context init` creates `.agent-memory/`, config, JSONL stores, and a private `.agent-memory/.gitignore`.
 - `agent-context index` scans package manager, languages, entry files, scripts, and key directories.
+- `agent-context setup` runs `init`, `index`, and `doctor` in one step.
 - `agent-context doctor` checks setup health, privacy guardrails, and project index state.
 - `agent-context search "<query>"` searches decisions, attempts, dependency reviews, and the project index.
 - `agent-context preflight "<task>"` creates an evidence-backed context pack before an agent starts work.
