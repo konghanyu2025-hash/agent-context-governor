@@ -11,6 +11,10 @@ export { reviewNpmPackage } from "./review/npmReview.js";
 export { startMcpServer } from "./mcp/server.js";
 export { formatDoctorReport, runDoctor } from "./doctor/doctor.js";
 export type { DoctorCheck, DoctorReport, DoctorStatus } from "./doctor/doctor.js";
+export { installShellHook, removeShellHook } from "./shell/hooks.js";
+export type { HookInstallResult, HookRemoveResult, ShellKind } from "./shell/hooks.js";
+export { runToolWithContext } from "./wrap/runTool.js";
+export type { RunToolOptions } from "./wrap/runTool.js";
 export type {
   AgentMemoryConfig,
   AttemptRecord,

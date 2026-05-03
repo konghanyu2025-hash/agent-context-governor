@@ -6,6 +6,7 @@ This repository is usable as a project-level open-source v1 when the following c
 - `npm run check` passes.
 - `npm pack --dry-run` includes `dist`, `docs`, `README.md`, `README.zh-CN.md`, `CHANGELOG.md`, `LICENSE`, and `SECURITY.md`.
 - GitHub installs work through `npm install -g github:konghanyu2025-hash/agent-context-governor`.
+- Daily use can stay on `claude` and `codex` after one-time `agc on`.
 - A packed install can run `agent-context --help`.
 - A first-time project can run `agent-context setup`.
 - The built CLI can run `doctor`.

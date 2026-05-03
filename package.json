@@ -14,6 +14,7 @@
   },
   "homepage": "https://github.com/konghanyu2025-hash/agent-context-governor#readme",
   "bin": {
+    "agc": "./dist/cli/main.js",
     "agent-context": "./dist/cli/main.js",
     "agent-context-mcp": "./dist/mcp/server.js",
     "agent-memory": "./dist/cli/main.js",

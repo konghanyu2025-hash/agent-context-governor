@@ -8,6 +8,8 @@ import { searchMemory } from "../search/search.js";
 import { reviewNpmPackage } from "../review/npmReview.js";
 import { startMcpServer } from "../mcp/server.js";
 import { formatDoctorReport, runDoctor } from "../doctor/doctor.js";
+import { defaultShell, installShellHook, removeShellHook, type ShellKind } from "../shell/hooks.js";
+import { runToolWithContext } from "../wrap/runTool.js";
 import type { EvidenceRef } from "../types.js";
 
 export async function runCli(argv = process.argv): Promise<void> {
@@ -18,6 +20,39 @@ export async function runCli(argv = process.argv): Promise<void> {
     .description("Local-first context and memory governor for coding agents.")
     .version("0.1.0")
     .option("-C, --cwd <path>", "project root", process.cwd());
+
+  program
+    .command("on")
+    .description("Enable transparent claude/codex shell helpers.")
+    .option("--shell <name>", "powershell, bash, or zsh")
+    .action(async (options: { shell?: ShellKind }) => {
+      const result = await installShellHook(parseShell(options.shell));
+      console.log(`${result.installed ? "Enabled" : "Already enabled"} for ${result.shell}: ${result.profilePath}`);
+      console.log("Restart your shell, then keep using claude or codex normally.");
+    });
+
+  program
+    .command("off")
+    .description("Disable transparent claude/codex shell helpers.")
+    .option("--shell <name>", "powershell, bash, or zsh")
+    .action(async (options: { shell?: ShellKind }) => {
+      const result = await removeShellHook(parseShell(options.shell));
+      console.log(`${result.removed ? "Disabled" : "Already disabled"} for ${result.shell}: ${result.profilePath}`);
+    });
+
+  program
+    .command("run")
+    .description("Run claude/codex with project memory prepared. Used by shell hooks.")
+    .argument("<tool>", "tool to run, usually claude or codex")
+    .argument("[args...]", "arguments passed to the tool")
+    .allowUnknownOption(true)
+    .action(async (tool: string, args: string[] = []) => {
+      const forwardedArgs = args[0] === "--" ? args.slice(1) : args;
+      const exitCode = await runToolWithContext(tool, forwardedArgs, {
+        cwd: program.opts<{ cwd: string }>().cwd
+      });
+      process.exitCode = exitCode;
+    });
 
   program
     .command("setup")
@@ -85,6 +120,7 @@ export async function runCli(argv = process.argv): Promise<void> {
 
   program
     .command("preflight")
+    .alias("pf")
     .description("Generate a compact task context pack before an agent starts work.")
     .argument("<task>", "task description")
     .option("--budget <tokens>", "approximate token budget", parseInteger, 3000)
@@ -335,6 +371,18 @@ function parseInteger(value: string): number {
   }
 
   return parsed;
+}
+
+function parseShell(value: string | undefined): ShellKind {
+  if (value === undefined) {
+    return defaultShell();
+  }
+
+  if (value === "powershell" || value === "bash" || value === "zsh") {
+    return value;
+  }
+
+  throw new Error(`Unsupported shell: ${value}`);
 }
 
 function summaryForRecord(record: unknown): string {

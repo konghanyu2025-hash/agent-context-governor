@@ -6,6 +6,7 @@
 - `npm run check` 通过。
 - `npm pack --dry-run` 包含 `dist`、`docs`、`README.md`、`README.zh-CN.md`、`CHANGELOG.md`、`LICENSE` 和 `SECURITY.md`。
 - 可以通过 `npm install -g github:konghanyu2025-hash/agent-context-governor` 从 GitHub 直接安装。
+- 一次执行 `agc on` 后，日常仍然可以直接使用 `claude` 和 `codex`。
 - 打包安装后可以运行 `agent-context --help`。
 - 新项目第一次使用可以直接运行 `agent-context setup`。
 - 构建产物 CLI 可以运行 `doctor`。

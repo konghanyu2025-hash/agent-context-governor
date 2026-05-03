@@ -34,7 +34,7 @@ npm link
 链接后可以使用：
 
 ```bash
-agent-context --help
+agc --help
 agent-context-mcp
 ```
 
@@ -47,29 +47,55 @@ agent-memory-mcp
 
 ## 快速开始
 
-```bash
-agent-context setup
+一次安装并开启：
 
-agent-context record decision \
+```bash
+npm install -g github:konghanyu2025-hash/agent-context-governor
+agc on
+```
+
+重启终端后，继续用你原来的命令：
+
+```bash
+claude
+codex
+```
+
+shell hook 会在启动真正的 `claude` 或 `codex` 前准备本地项目记忆。它不是替代这些工具，只是在 shell 里做一层辅助包装。
+
+手动兜底也保持短命令：
+
+```bash
+agc pf "extend auth flow"
+```
+
+如果想显式初始化当前项目：
+
+```bash
+agc setup
+
+agc record decision \
   --title "Use JSONL for local memory" \
   --rationale "It is auditable, local-first, and works without external services." \
   --scope "src/store,src/search"
 
-agent-context record attempt \
+agc record attempt \
   --task "Add dependency memory" \
   --approach "Use a hosted vector database in MVP" \
   --result abandoned \
   --failure-reason "MVP must remain local-first and dependency-light"
 
-agent-context deps review commander --use-case "CLI command parsing"
-agent-context preflight "extend the CLI with a new record command" --budget 3000
+agc deps review commander --use-case "CLI command parsing"
 ```
 
 ## CLI 命令
 
+- `agc on`：为 `claude` 和 `codex` 开启透明 shell 辅助。
+- `agc off`：关闭透明 shell 辅助。
+- `agc pf "<task>"`：`preflight` 的短命令形式。
+- `agc setup`：一条命令完成 `init`、`index` 和 `doctor`。
 - `agent-context init`：创建 `.agent-memory/`、配置文件、JSONL 存储和私有 `.agent-memory/.gitignore`。
 - `agent-context index`：扫描包管理器、语言、入口文件、脚本和关键目录。
-- `agent-context setup`：一条命令完成 `init`、`index` 和 `doctor`。
 - `agent-context doctor`：检查本地设置、隐私保护和项目索引状态。
 - `agent-context search "<query>"`：搜索决策、尝试记录、依赖审查和项目索引。
 - `agent-context preflight "<task>"`：在 agent 开始工作前生成 context pack。
@@ -138,6 +164,10 @@ npm pack --dry-run
 ## 项目状态
 
 这是一个可自用、可公开迭代的早期 v1。它暂不包含云同步、托管团队服务、编辑器插件或向量数据库。
+
+## 简单使用原则
+
+日常主命令仍然应该是 `claude` 和 `codex`。`agc` 只是最多 3 个字母的辅助命令，用来开启、关闭、初始化和少量手动检查。
 
 ## 许可证
 

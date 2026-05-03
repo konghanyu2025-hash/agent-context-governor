@@ -2,9 +2,23 @@
 
 ## agent 开始任务前
 
+一次开启：
+
 ```bash
-agent-context setup
-agent-context preflight "在这里描述任务" --budget 3000
+agc on
+```
+
+之后继续用原来的工具：
+
+```bash
+claude
+codex
+```
+
+手动兜底：
+
+```bash
+agc pf "在这里描述任务"
 ```
 
 先阅读生成的 context pack，再让 agent 做更大范围的仓库探索。
@@ -12,7 +26,7 @@ agent-context preflight "在这里描述任务" --budget 3000
 ## 做出技术决策后
 
 ```bash
-agent-context record decision \
+agc record decision \
   --title "简短决策标题" \
   --rationale "为什么这是合适取舍" \
   --scope "src/module,tests/module.test.ts"
@@ -21,7 +35,7 @@ agent-context record decision \
 ## 失败或放弃某条路径后
 
 ```bash
-agent-context record attempt \
+agc record attempt \
   --task "当时要完成的任务" \
   --approach "尝试过的方法" \
   --result failure \
@@ -34,7 +48,7 @@ agent-context record attempt \
 ## 添加 npm 依赖前
 
 ```bash
-agent-context deps review package-name --use-case "为什么需要它"
+agc deps review package-name --use-case "为什么需要它"
 ```
 
 审查会记录许可证、维护状态、直接依赖数量、明显风险，并输出 `use`、`spike` 或 `avoid` 建议。

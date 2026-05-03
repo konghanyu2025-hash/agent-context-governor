@@ -2,9 +2,23 @@
 
 ## Before Starting Agent Work
 
+One-time:
+
 ```bash
-agent-context setup
-agent-context preflight "describe the task here" --budget 3000
+agc on
+```
+
+Then keep using the original tools:
+
+```bash
+claude
+codex
+```
+
+Manual fallback:
+
+```bash
+agc pf "describe the task here"
 ```
 
 Read the generated context pack before spending more tokens on broad repository exploration.
@@ -12,7 +26,7 @@ Read the generated context pack before spending more tokens on broad repository 
 ## After a Decision
 
 ```bash
-agent-context record decision \
+agc record decision \
   --title "Short decision title" \
   --rationale "Why this is the right tradeoff" \
   --scope "src/module,tests/module.test.ts"
@@ -21,7 +35,7 @@ agent-context record decision \
 ## After a Failed or Abandoned Path
 
 ```bash
-agent-context record attempt \
+agc record attempt \
   --task "What you were trying to do" \
   --approach "What was tried" \
   --result failure \
@@ -34,7 +48,7 @@ Failed and abandoned attempts are shown in future context packs as negative cach
 ## Before Adding an npm Dependency
 
 ```bash
-agent-context deps review package-name --use-case "why it is needed"
+agc deps review package-name --use-case "why it is needed"
 ```
 
 The review records license, maintenance state, direct dependency count, obvious risks, and a `use`, `spike`, or `avoid` recommendation.
