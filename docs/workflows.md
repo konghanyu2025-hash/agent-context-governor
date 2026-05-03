@@ -2,10 +2,11 @@
 
 ## Before Starting Agent Work
 
-One-time:
+One-time per project:
 
 ```bash
 agc on
+agc st
 ```
 
 Then keep using the original tools:
@@ -14,6 +15,8 @@ Then keep using the original tools:
 claude
 codex
 ```
+
+`agc on` registers the MCP server and writes managed instructions that tell agents to call `context.pack` and `memory.search` before broad exploration.
 
 Manual fallback:
 

@@ -2,10 +2,11 @@
 
 ## agent 开始任务前
 
-一次开启：
+每个项目开启一次：
 
 ```bash
 agc on
+agc st
 ```
 
 之后继续用原来的工具：
@@ -14,6 +15,8 @@ agc on
 claude
 codex
 ```
+
+`agc on` 会注册 MCP server，并写入托管项目指令，让 agent 在大范围探索前先调用 `context.pack` 和 `memory.search`。
 
 手动兜底：
 

@@ -64,11 +64,28 @@ describe("agent-context-governor integration", () => {
     });
 
     const server = startMcpServer({ cwd: root, input, output });
-    input.end(`${JSON.stringify({ jsonrpc: "2.0", id: 1, method: "tools/list" })}\n`);
+    input.write(`${JSON.stringify({
+      jsonrpc: "2.0",
+      id: 1,
+      method: "initialize",
+      params: {
+        protocolVersion: "2025-06-18",
+        capabilities: {},
+        clientInfo: {
+          name: "test-client",
+          version: "0.0.0"
+        }
+      }
+    })}\n`);
+    input.write(`${JSON.stringify({ jsonrpc: "2.0", method: "notifications/initialized" })}\n`);
+    input.end(`${JSON.stringify({ jsonrpc: "2.0", id: 2, method: "tools/list" })}\n`);
     await server;
 
-    const response = JSON.parse(raw.trim()) as { result: { tools: Array<{ name: string }> } };
-    expect(response.result.tools.map((tool) => tool.name)).toEqual(
+    const responses = raw.trim().split(/\r?\n/u).map((line) => JSON.parse(line)) as Array<{ result: { tools?: Array<{ name: string }> } }>;
+    expect(responses[0]?.result).toMatchObject({
+      protocolVersion: "2025-06-18"
+    });
+    expect(responses[1]?.result.tools?.map((tool) => tool.name)).toEqual(
       expect.arrayContaining(["memory.search", "context.pack", "decision.record", "attempt.record", "dependency.review", "project.index"])
     );
   });

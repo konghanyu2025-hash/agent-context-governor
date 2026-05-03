@@ -1,38 +1,37 @@
-# Shell Hook
+# 可选 Shell Hook
 
-`agent-context-governor` 的定位是辅助现有编程工具，不替代它们。
-
-短命令是：
-
-```bash
-agc
-```
-
-一次开启：
+shell hook 不再是默认接入方式。优先使用：
 
 ```bash
 agc on
+agc st
 ```
 
-重启终端后继续使用：
+这会配置 MCP 和项目指令，不会修改你的 shell profile。日常命令仍然是：
 
 ```bash
 claude
 codex
 ```
 
-hook 会在 shell 里定义名为 `claude` 和 `codex` 的函数。函数会调用 `agc run <tool> -- ...`，先准备本地项目记忆，再启动真正的工具可执行文件。
+## 旧式 wrapper
 
-关闭：
+如果你仍然想在 shell 里定义名为 `claude` 和 `codex` 的函数，让它们调用 `agc run <tool> -- ...`，需要显式安装：
 
 ```bash
-agc off
+agc sh on
 ```
 
-短命令手动兜底：
+只预览、不写入：
 
 ```bash
-agc pf "你的任务"
+agc sh on --dry-run
+```
+
+移除：
+
+```bash
+agc sh off
 ```
 
 支持的 shell：
@@ -40,3 +39,5 @@ agc pf "你的任务"
 - PowerShell
 - bash
 - zsh
+
+hook 安装器只写入带 marker 的托管块，并会在修改已有 profile 前备份。除非确实需要包装 shell 命令，否则优先使用 MCP。

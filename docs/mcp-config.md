@@ -1,19 +1,28 @@
 # MCP Configuration
 
-Build the project first:
+The easiest path is:
 
 ```bash
-npm install
-npm run build
+agc on
+agc st
 ```
 
-Use the generated MCP server:
+`agc on` registers `agent-context-governor` with detected Claude Code and Codex CLIs and writes managed project instructions. Daily use remains:
+
+```bash
+claude
+codex
+```
+
+## Manual Server Command
+
+If a client needs manual configuration, the stdio server command is:
 
 ```bash
 agent-context-mcp
 ```
 
-Example client configuration:
+Example MCP client configuration:
 
 ```json
 {
@@ -26,7 +35,12 @@ Example client configuration:
 }
 ```
 
-When working from an unpublished local checkout, point directly at the built server:
+When working from an unpublished local checkout, build first and point directly at the server:
+
+```bash
+npm install
+npm run build
+```
 
 ```json
 {
@@ -39,7 +53,7 @@ When working from an unpublished local checkout, point directly at the built ser
 }
 ```
 
-Available tools:
+## Available Tools
 
 - `memory.search`
 - `context.pack`
@@ -47,3 +61,5 @@ Available tools:
 - `attempt.record`
 - `dependency.review`
 - `project.index`
+
+Agents should call `context.pack` or `memory.search` before broad repository exploration and should record durable outcomes after important decisions or failed attempts.

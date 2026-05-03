@@ -9,10 +9,10 @@ The project stores structured memory in `.agent-memory/` inside the local projec
 ## What It Does
 
 - Records durable decisions, failed attempts, successful attempts, and dependency reviews.
-- Generates compact context packs before an agent starts work.
+- Exposes an MCP stdio server with search, context pack, record, dependency review, and project index tools.
+- Installs project instructions so agents know to call the memory tools before broad exploration.
 - Keeps a negative cache for abandoned or failed approaches so agents do not retry known-bad paths blindly.
 - Reviews npm dependencies using registry metadata before adoption.
-- Exposes both a CLI and an MCP stdio server.
 - Keeps private project memory out of Git by default.
 
 ## Install
@@ -31,7 +31,7 @@ npm run build
 npm link
 ```
 
-After linking:
+After installing:
 
 ```bash
 agc --help
@@ -47,21 +47,28 @@ agent-memory-mcp
 
 ## Quick Start
 
-One-time install and enable:
+Enable once inside a project:
 
 ```bash
-npm install -g github:konghanyu2025-hash/agent-context-governor
 agc on
 ```
 
-Restart your shell. After that, keep using your normal tools:
+This initializes `.agent-memory/`, indexes the project, registers the local MCP server with available `claude` and `codex` CLIs, and writes small managed blocks to `AGENTS.md` and `CLAUDE.md`.
+
+Check the setup:
+
+```bash
+agc st
+```
+
+Then keep using your normal tools:
 
 ```bash
 claude
 codex
 ```
 
-The shell hook prepares local project memory before launching the real `claude` or `codex` command. It does not replace those tools; it only wraps them in your shell.
+The default integration is MCP plus project instructions. It does not modify your shell profile. If an agent session is already open, restart that session so it loads the new MCP server and instructions.
 
 Manual fallback, still short:
 
@@ -69,31 +76,20 @@ Manual fallback, still short:
 agc pf "extend auth flow"
 ```
 
-Project setup can still be run explicitly:
+Disable the project integration:
 
 ```bash
-agc setup
-
-agc record decision \
-  --title "Use JSONL for local memory" \
-  --rationale "It is auditable, local-first, and works without external services." \
-  --scope "src/store,src/search"
-
-agc record attempt \
-  --task "Add dependency memory" \
-  --approach "Use a hosted vector database in MVP" \
-  --result abandoned \
-  --failure-reason "MVP must remain local-first and dependency-light"
-
-agc deps review commander --use-case "CLI command parsing"
+agc off
 ```
 
 ## CLI
 
-- `agc on` enables transparent shell helpers for `claude` and `codex`.
-- `agc off` disables those shell helpers.
+- `agc on` enables MCP memory and managed project instructions for this project.
+- `agc off` removes the MCP registration and managed instruction blocks.
+- `agc st` checks local memory, MCP command availability, Claude/Codex registration, and project instructions.
 - `agc pf "<task>"` is the short form of `preflight`.
 - `agc setup` runs `init`, `index`, and `doctor` in one step.
+- `agc sh on|off` manages optional legacy shell wrapper hooks. This is not the default path.
 - `agent-context init` creates `.agent-memory/`, config, JSONL stores, and a private `.agent-memory/.gitignore`.
 - `agent-context index` scans package manager, languages, entry files, scripts, and key directories.
 - `agent-context doctor` checks setup health, privacy guardrails, and project index state.
@@ -104,9 +100,9 @@ agc deps review commander --use-case "CLI command parsing"
 - `agent-context deps review <package> --use-case "<why>"` checks npm registry metadata and records a dependency recommendation.
 - `agent-context mcp` starts the MCP stdio server.
 
-## MCP
+## MCP Tools
 
-Run:
+The server command is:
 
 ```bash
 agent-context-mcp
@@ -121,8 +117,7 @@ Available tools:
 - `dependency.review`
 - `project.index`
 
-See [docs/mcp-config.md](docs/mcp-config.md) for example client configuration.
-For Chinese documentation, see [README.zh-CN.md](README.zh-CN.md) and [docs/zh-CN](docs/zh-CN).
+`agc on` registers this server automatically for detected Claude Code and Codex CLIs. Manual client configuration examples are in [docs/mcp-config.md](docs/mcp-config.md).
 
 ## Local Storage
 
@@ -134,6 +129,7 @@ For Chinese documentation, see [README.zh-CN.md](README.zh-CN.md) and [docs/zh-C
   dependencies.jsonl
   project-index.json
   context-packs/
+  backups/
 ```
 
 `.agent-memory/` is intentionally ignored by default. Treat it as private working memory unless you explicitly design a team-sharing workflow.
@@ -168,7 +164,9 @@ This is an early v1 for local use and public iteration. It intentionally does no
 
 ## Simple Use Policy
 
-Daily use should stay on `claude` and `codex`. `agc` is only the short auxiliary command for setup, toggling hooks, and rare manual context checks.
+Daily use should stay on `claude` and `codex`. `agc` is only the short auxiliary command for setup, status, toggling, and rare manual context checks.
+
+For Chinese documentation, see [README.zh-CN.md](README.zh-CN.md) and [docs/zh-CN](docs/zh-CN).
 
 ## License
 

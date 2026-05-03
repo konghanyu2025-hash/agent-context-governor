@@ -11,12 +11,20 @@ export interface HookInstallResult {
   shell: ShellKind;
   profilePath: string;
   installed: boolean;
+  dryRun: boolean;
+  backupPath?: string;
 }
 
 export interface HookRemoveResult {
   shell: ShellKind;
   profilePath: string;
   removed: boolean;
+  dryRun: boolean;
+  backupPath?: string;
+}
+
+export interface ShellHookOptions {
+  dryRun?: boolean | undefined;
 }
 
 export function defaultShell(): ShellKind {
@@ -45,31 +53,43 @@ export function profilePathFor(shell: ShellKind): string {
   return path.join(homedir(), ".bashrc");
 }
 
-export async function installShellHook(shell = defaultShell()): Promise<HookInstallResult> {
+export async function installShellHook(shell = defaultShell(), options: ShellHookOptions = {}): Promise<HookInstallResult> {
   const profilePath = profilePathFor(shell);
   const current = await readTextIfExists(profilePath);
   const next = appendHook(current, hookBlock(shell));
+  const dryRun = options.dryRun ?? false;
 
   if (next === current) {
-    return { shell, profilePath, installed: false };
+    return { shell, profilePath, installed: false, dryRun };
+  }
+
+  if (dryRun) {
+    return { shell, profilePath, installed: true, dryRun };
   }
 
   await mkdir(path.dirname(profilePath), { recursive: true });
+  const backupPath = await backupProfileIfNeeded(profilePath, current);
   await writeFile(profilePath, next, "utf8");
-  return { shell, profilePath, installed: true };
+  return hookInstallResult(shell, profilePath, true, dryRun, backupPath);
 }
 
-export async function removeShellHook(shell = defaultShell()): Promise<HookRemoveResult> {
+export async function removeShellHook(shell = defaultShell(), options: ShellHookOptions = {}): Promise<HookRemoveResult> {
   const profilePath = profilePathFor(shell);
   const current = await readTextIfExists(profilePath);
   const next = stripHook(current);
+  const dryRun = options.dryRun ?? false;
 
   if (next === current) {
-    return { shell, profilePath, removed: false };
+    return { shell, profilePath, removed: false, dryRun };
   }
 
+  if (dryRun) {
+    return { shell, profilePath, removed: true, dryRun };
+  }
+
+  const backupPath = await backupProfileIfNeeded(profilePath, current);
   await writeFile(profilePath, next, "utf8");
-  return { shell, profilePath, removed: true };
+  return hookRemoveResult(shell, profilePath, true, dryRun, backupPath);
 }
 
 export function hookBlock(shell: ShellKind): string {
@@ -110,6 +130,46 @@ async function readTextIfExists(filePath: string): Promise<string> {
 
     throw error;
   }
+}
+
+async function backupProfileIfNeeded(profilePath: string, current: string): Promise<string | undefined> {
+  if (current.length === 0) {
+    return undefined;
+  }
+
+  const timestamp = new Date().toISOString().replace(/[:.]/gu, "-");
+  const backupPath = `${profilePath}.agent-context-governor.${timestamp}.bak`;
+  await mkdir(path.dirname(backupPath), { recursive: true });
+  await writeFile(backupPath, current, "utf8");
+  return backupPath;
+}
+
+function hookInstallResult(
+  shell: ShellKind,
+  profilePath: string,
+  installed: boolean,
+  dryRun: boolean,
+  backupPath: string | undefined
+): HookInstallResult {
+  const result: HookInstallResult = { shell, profilePath, installed, dryRun };
+  if (backupPath !== undefined) {
+    result.backupPath = backupPath;
+  }
+  return result;
+}
+
+function hookRemoveResult(
+  shell: ShellKind,
+  profilePath: string,
+  removed: boolean,
+  dryRun: boolean,
+  backupPath: string | undefined
+): HookRemoveResult {
+  const result: HookRemoveResult = { shell, profilePath, removed, dryRun };
+  if (backupPath !== undefined) {
+    result.backupPath = backupPath;
+  }
+  return result;
 }
 
 function escapeRegExp(value: string): string {

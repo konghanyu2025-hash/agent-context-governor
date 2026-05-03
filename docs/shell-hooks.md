@@ -1,38 +1,37 @@
-# Shell Hooks
+# Optional Shell Hooks
 
-`agent-context-governor` is meant to assist existing coding tools, not replace them.
-
-The short command is:
-
-```bash
-agc
-```
-
-Enable once:
+Shell hooks are no longer the default integration path. Use this first:
 
 ```bash
 agc on
+agc st
 ```
 
-Restart the shell. Then keep using:
+That configures MCP and project instructions without changing your shell profile. Daily commands remain:
 
 ```bash
 claude
 codex
 ```
 
-The hook defines shell functions named `claude` and `codex`. Each function calls `agc run <tool> -- ...`, which prepares local memory and then launches the real tool executable.
+## Legacy Wrapper
 
-Disable:
+If you still want shell functions named `claude` and `codex` that call `agc run <tool> -- ...`, install them explicitly:
 
 ```bash
-agc off
+agc sh on
 ```
 
-Short manual fallback:
+Preview without writing:
 
 ```bash
-agc pf "your task"
+agc sh on --dry-run
+```
+
+Remove:
+
+```bash
+agc sh off
 ```
 
 Supported shells:
@@ -40,3 +39,5 @@ Supported shells:
 - PowerShell
 - bash
 - zsh
+
+The hook installer writes only a marked block and backs up an existing profile before modifying it. Prefer MCP unless you have a specific reason to wrap shell commands.

@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+import { access } from "node:fs/promises";
 import { pathToFileURL } from "node:url";
 import { Command } from "commander";
 import { MemoryStore } from "../store/memoryStore.js";
@@ -8,9 +9,42 @@ import { searchMemory } from "../search/search.js";
 import { reviewNpmPackage } from "../review/npmReview.js";
 import { startMcpServer } from "../mcp/server.js";
 import { formatDoctorReport, runDoctor } from "../doctor/doctor.js";
-import { defaultShell, installShellHook, removeShellHook, type ShellKind } from "../shell/hooks.js";
+import {
+  defaultShell,
+  installShellHook,
+  removeShellHook,
+  type HookInstallResult,
+  type HookRemoveResult,
+  type ShellKind
+} from "../shell/hooks.js";
 import { runToolWithContext } from "../wrap/runTool.js";
+import {
+  getMcpToolStatus,
+  installMcpServerForTool,
+  removeMcpServerForTool,
+  resolveMcpServerLaunch,
+  supportedAgentTools,
+  type McpInstallResult,
+  type McpRemoveResult,
+  type McpServerLaunch,
+  type McpToolStatus
+} from "../install/mcpInstall.js";
+import {
+  inspectProjectInstructions,
+  installProjectInstructions,
+  removeProjectInstructions,
+  type ProjectInstructionChange,
+  type ProjectInstructionStatus
+} from "../install/projectInstructions.js";
 import type { EvidenceRef } from "../types.js";
+
+interface IntegrationStatus {
+  state: "ready" | "partial" | "not-ready";
+  memoryReady: boolean;
+  mcpLaunch: McpServerLaunch;
+  instructions: ProjectInstructionStatus;
+  tools: McpToolStatus[];
+}
 
 export async function runCli(argv = process.argv): Promise<void> {
   const program = new Command();
@@ -23,21 +57,90 @@ export async function runCli(argv = process.argv): Promise<void> {
 
   program
     .command("on")
-    .description("Enable transparent claude/codex shell helpers.")
+    .description("Enable local MCP memory for claude/codex in this project.")
+    .option("--shell-hook", "also install legacy shell wrapper hooks")
     .option("--shell <name>", "powershell, bash, or zsh")
-    .action(async (options: { shell?: ShellKind }) => {
-      const result = await installShellHook(parseShell(options.shell));
-      console.log(`${result.installed ? "Enabled" : "Already enabled"} for ${result.shell}: ${result.profilePath}`);
-      console.log("Restart your shell, then keep using claude or codex normally.");
+    .option("--dry-run", "preview optional shell hook changes without writing them")
+    .action(async (options: { shellHook?: boolean; shell?: ShellKind; dryRun?: boolean }) => {
+      const cwd = program.opts<{ cwd: string }>().cwd;
+      const store = new MemoryStore(cwd);
+      const paths = await store.init();
+      const index = await buildProjectIndex(store);
+      const instructions = await installProjectInstructions(cwd);
+      const launch = await resolveMcpServerLaunch(cwd);
+      const mcpResults: McpInstallResult[] = [];
+
+      for (const tool of supportedAgentTools()) {
+        mcpResults.push(await installMcpServerForTool(tool, launch, { cwd }));
+      }
+
+      console.log(formatEnableReport(paths.memoryDir, index.languages, launch, instructions, mcpResults));
+
+      if (options.shellHook) {
+        const result = await installShellHook(parseShell(options.shell), { dryRun: options.dryRun });
+        console.log(formatShellInstallResult(result));
+      }
     });
 
   program
     .command("off")
-    .description("Disable transparent claude/codex shell helpers.")
+    .description("Disable local MCP memory for claude/codex in this project.")
+    .option("--shell-hook", "also remove legacy shell wrapper hooks")
     .option("--shell <name>", "powershell, bash, or zsh")
-    .action(async (options: { shell?: ShellKind }) => {
-      const result = await removeShellHook(parseShell(options.shell));
-      console.log(`${result.removed ? "Disabled" : "Already disabled"} for ${result.shell}: ${result.profilePath}`);
+    .option("--dry-run", "preview optional shell hook changes without writing them")
+    .action(async (options: { shellHook?: boolean; shell?: ShellKind; dryRun?: boolean }) => {
+      const cwd = program.opts<{ cwd: string }>().cwd;
+      const mcpResults: McpRemoveResult[] = [];
+
+      for (const tool of supportedAgentTools()) {
+        mcpResults.push(await removeMcpServerForTool(tool, { cwd }));
+      }
+
+      const instructions = await removeProjectInstructions(cwd);
+      console.log(formatDisableReport(instructions, mcpResults));
+
+      if (options.shellHook) {
+        const result = await removeShellHook(parseShell(options.shell), { dryRun: options.dryRun });
+        console.log(formatShellRemoveResult(result));
+      }
+    });
+
+  program
+    .command("status")
+    .alias("st")
+    .description("Check local memory, MCP registration, and project instructions.")
+    .option("--json", "print raw JSON")
+    .action(async (options: { json?: boolean }) => {
+      const cwd = program.opts<{ cwd: string }>().cwd;
+      const status = await collectIntegrationStatus(cwd);
+
+      if (options.json) {
+        console.log(JSON.stringify(status, null, 2));
+      } else {
+        console.log(formatStatusReport(status));
+      }
+    });
+
+  const shell = program.command("sh").description("Manage optional legacy shell wrapper hooks.");
+
+  shell
+    .command("on")
+    .description("Install optional claude/codex shell wrapper hooks.")
+    .option("--shell <name>", "powershell, bash, or zsh")
+    .option("--dry-run", "preview changes without writing the shell profile")
+    .action(async (options: { shell?: ShellKind; dryRun?: boolean }) => {
+      const result = await installShellHook(parseShell(options.shell), { dryRun: options.dryRun });
+      console.log(formatShellInstallResult(result));
+    });
+
+  shell
+    .command("off")
+    .description("Remove optional claude/codex shell wrapper hooks.")
+    .option("--shell <name>", "powershell, bash, or zsh")
+    .option("--dry-run", "preview changes without writing the shell profile")
+    .action(async (options: { shell?: ShellKind; dryRun?: boolean }) => {
+      const result = await removeShellHook(parseShell(options.shell), { dryRun: options.dryRun });
+      console.log(formatShellRemoveResult(result));
     });
 
   program
@@ -72,7 +175,7 @@ export async function runCli(argv = process.argv): Promise<void> {
         console.log("");
         console.log(formatDoctorReport(report));
         console.log("");
-        console.log('Next: run agent-context preflight "describe your task"');
+        console.log("Next: run agc on, then use claude or codex normally. Check with agc st.");
       }
 
       if (!report.ok) {
@@ -343,6 +446,137 @@ function createStore(program: Command): MemoryStore {
   return new MemoryStore(options.cwd);
 }
 
+async function collectIntegrationStatus(cwd: string): Promise<IntegrationStatus> {
+  const store = new MemoryStore(cwd);
+  const memoryReady = await exists(store.paths.memoryDir);
+  const mcpLaunch = await resolveMcpServerLaunch(cwd);
+  const instructions = await inspectProjectInstructions(cwd);
+  const tools: McpToolStatus[] = [];
+
+  for (const tool of supportedAgentTools()) {
+    tools.push(await getMcpToolStatus(tool, { cwd }));
+  }
+
+  const hasRegisteredTool = tools.some((tool) => tool.registered);
+  const hasAvailableTool = tools.some((tool) => tool.detected.available);
+  const instructionsReady = instructions.agentsInstalled && instructions.claudeInstalled;
+  const ready = memoryReady && mcpLaunch.available && instructionsReady && hasRegisteredTool;
+  const partial = memoryReady || mcpLaunch.available || instructionsReady || hasAvailableTool || hasRegisteredTool;
+
+  return {
+    state: ready ? "ready" : partial ? "partial" : "not-ready",
+    memoryReady,
+    mcpLaunch,
+    instructions,
+    tools
+  };
+}
+
+function formatEnableReport(
+  memoryDir: string,
+  languages: string[],
+  launch: McpServerLaunch,
+  instructions: ProjectInstructionChange,
+  mcpResults: McpInstallResult[]
+): string {
+  return [
+    "Agent Context Governor: enabled",
+    `Memory: ${memoryDir}`,
+    `Project index: ${languages.join(", ") || "unknown language"}`,
+    `MCP server: ${formatLaunch(launch)}`,
+    `Project instructions: ${formatInstructionChange(instructions)}`,
+    ...mcpResults.map(formatMcpInstallResult),
+    "Daily use: restart any open agent session, then run claude or codex normally.",
+    "Check: agc st"
+  ].join("\n");
+}
+
+function formatDisableReport(instructions: ProjectInstructionChange, mcpResults: McpRemoveResult[]): string {
+  return [
+    "Agent Context Governor: disabled",
+    `Project instructions: ${formatInstructionChange(instructions)}`,
+    ...mcpResults.map(formatMcpRemoveResult),
+    "Optional legacy shell hooks are not touched unless you pass --shell-hook or run agc sh off."
+  ].join("\n");
+}
+
+function formatStatusReport(status: IntegrationStatus): string {
+  const instructions =
+    status.instructions.agentsInstalled && status.instructions.claudeInstalled
+      ? "installed"
+      : status.instructions.agentsInstalled || status.instructions.claudeInstalled
+        ? "partial"
+        : "missing";
+
+  return [
+    `Agent Context Status: ${status.state}`,
+    `Memory: ${status.memoryReady ? "ready" : "missing"}`,
+    `MCP server: ${formatLaunch(status.mcpLaunch)}`,
+    `Project instructions: ${instructions}`,
+    ...status.tools.map((tool) => `MCP ${tool.tool}: ${formatMcpStatus(tool)}`),
+    status.state === "ready" ? "Daily use: claude or codex" : "Next: run agc on"
+  ].join("\n");
+}
+
+function formatMcpInstallResult(result: McpInstallResult): string {
+  const suffix = result.error ? ` (${result.error})` : "";
+  return `MCP ${result.tool}: ${result.action}${suffix}`;
+}
+
+function formatMcpRemoveResult(result: McpRemoveResult): string {
+  const suffix = result.error ? ` (${result.error})` : "";
+  return `MCP ${result.tool}: ${result.action}${suffix}`;
+}
+
+function formatMcpStatus(status: McpToolStatus): string {
+  if (!status.detected.available) {
+    return "not found";
+  }
+
+  if (status.error) {
+    return `unknown (${status.error})`;
+  }
+
+  return status.registered ? "registered" : "not registered";
+}
+
+function formatLaunch(launch: McpServerLaunch): string {
+  if (!launch.available) {
+    return "not found";
+  }
+
+  return launch.args.length > 0
+    ? `${launch.command} ${launch.args.join(" ")} (${launch.source})`
+    : `${launch.command} (${launch.source})`;
+}
+
+function formatInstructionChange(change: ProjectInstructionChange): string {
+  const changed = change.files.filter((file) => file.changed);
+  if (changed.length === 0) {
+    return "already up to date";
+  }
+
+  return changed
+    .map((file) => `${file.removed ? "removed" : "updated"} ${file.file}${file.backupPath ? `; backup ${file.backupPath}` : ""}`)
+    .join(", ");
+}
+
+function formatShellInstallResult(result: HookInstallResult): string {
+  const action = result.dryRun
+    ? result.installed ? "Would enable" : "Already enabled"
+    : result.installed ? "Enabled" : "Already enabled";
+  const backup = result.backupPath ? `; backup ${result.backupPath}` : "";
+  return `${action} optional shell hook for ${result.shell}: ${result.profilePath}${backup}`;
+}
+
+function formatShellRemoveResult(result: HookRemoveResult): string {
+  const action = result.dryRun
+    ? result.removed ? "Would disable" : "Already disabled"
+    : result.removed ? "Disabled" : "Already disabled";
+  const backup = result.backupPath ? `; backup ${result.backupPath}` : "";
+  return `${action} optional shell hook for ${result.shell}: ${result.profilePath}${backup}`;
+}
+
 function parseList(value: string | undefined): string[] {
   return (value ?? "")
     .split(",")
@@ -408,6 +642,15 @@ function summaryForRecord(record: unknown): string {
 function isDirectCli(metaUrl: string): boolean {
   const entry = process.argv[1];
   return Boolean(entry && pathToFileURL(entry).href === metaUrl);
+}
+
+async function exists(filePath: string): Promise<boolean> {
+  try {
+    await access(filePath);
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 if (isDirectCli(import.meta.url)) {
