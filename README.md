@@ -1,5 +1,7 @@
 # agent-context-governor
 
+[简体中文](README.zh-CN.md)
+
 Local-first context and memory governor for coding agents. It helps Claude Code, Codex, Cursor, and MCP-capable tools avoid repeated context gathering, repeated failed paths, and blind dependency choices.
 
 The project stores structured memory in `.agent-memory/` inside the local project. It has no telemetry, no cloud service, and no vector database requirement.
@@ -89,6 +91,7 @@ Available tools:
 - `project.index`
 
 See [docs/mcp-config.md](docs/mcp-config.md) for example client configuration.
+For Chinese documentation, see [README.zh-CN.md](README.zh-CN.md) and [docs/zh-CN](docs/zh-CN).
 
 ## Local Storage
 

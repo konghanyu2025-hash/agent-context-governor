@@ -5,6 +5,14 @@
   "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/konghanyu2025-hash/agent-context-governor.git"
+  },
+  "bugs": {
+    "url": "https://github.com/konghanyu2025-hash/agent-context-governor/issues"
+  },
+  "homepage": "https://github.com/konghanyu2025-hash/agent-context-governor#readme",
   "bin": {
     "agent-context": "./dist/cli/main.js",
     "agent-context-mcp": "./dist/mcp/server.js",
@@ -18,6 +26,7 @@
     "dist",
     "docs",
     "README.md",
+    "README.zh-CN.md",
     "CHANGELOG.md",
     "LICENSE",
     "SECURITY.md"
